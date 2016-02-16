@@ -3,6 +3,8 @@
 Provides a macro, `assert_matches`, which tests whether a value
 matches a given pattern, causing a panic if the match fails.
 
+[Documentation](https://murarth.github.io/assert_matches/assert_matches/index.html)
+
 ```rust
 #[macro_use] extern crate assert_matches;
 
