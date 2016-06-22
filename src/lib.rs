@@ -26,14 +26,14 @@ macro_rules! assert_matches {
     ( $e:expr , $pat:pat ) => {
         match $e {
             $pat => (),
-            e => panic!("assertion failed: `{:?}` does not match `{}`",
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`",
                 e, stringify!($pat))
         }
     };
     ( $e:expr , $pat:pat if $cond:expr ) => {
         match $e {
             $pat if $cond => (),
-            e => panic!("assertion failed: `{:?}` does not match `{} if {}`",
+            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`",
                 e, stringify!($pat), stringify!($cond))
         }
     };
@@ -84,5 +84,11 @@ mod test {
         let b = Foo::B("foo");
 
         assert_matches!(b, Foo::B(s) if s == "bar");
+    }
+
+    #[test]
+    fn test_assert_no_move() {
+        let b = &mut Foo::A(0);
+        assert_matches!(*b, Foo::A(0));
     }
 }
