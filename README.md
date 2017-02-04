@@ -26,7 +26,7 @@ to your Cargo.toml:
 
 ```toml
 [dev-dependencies]
-assert_matches = "1.0"
+assert_matches = "1.1"
 ```
 
 ## License

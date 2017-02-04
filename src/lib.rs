@@ -37,6 +37,20 @@ macro_rules! assert_matches {
                 e, stringify!($pat), stringify!($cond))
         }
     };
+    ( $e:expr , $pat:pat , $($arg:tt)* ) => {
+        match $e {
+            $pat => (),
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
+                e, stringify!($pat), format_args!($($arg)*))
+        }
+    };
+    ( $e:expr , $pat:pat if $cond:expr , $($arg:tt)* ) => {
+        match $e {
+            $pat if $cond => (),
+            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`: {}",
+                e, stringify!($pat), stringify!($cond), format_args!($($arg)*))
+        }
+    };
 }
 
 #[cfg(test)]
@@ -90,5 +104,15 @@ mod test {
     fn test_assert_no_move() {
         let b = &mut Foo::A(0);
         assert_matches!(*b, Foo::A(0));
+    }
+
+    #[test]
+    fn assert_with_message() {
+        let a = Foo::A(0);
+
+        assert_matches!(a, Foo::A(_), "o noes");
+        assert_matches!(a, Foo::A(n) if n == 0, "o noes");
+        assert_matches!(a, Foo::A(_), "o noes {:?}", a);
+        assert_matches!(a, Foo::A(n) if n == 0, "o noes {:?}", a);
     }
 }
