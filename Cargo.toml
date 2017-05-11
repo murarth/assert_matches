@@ -5,7 +5,7 @@ description = "Asserts that a value matches a pattern"
 version = "1.1.0"
 authors = ["Murarth <murarth@gmail.com>"]
 
-documentation = "http://murarth.github.io/assert_matches/assert_matches/index.html"
+documentation = "https://docs.rs/assert_matches/"
 homepage = "https://github.com/murarth/assert_matches"
 repository = "https://github.com/murarth/assert_matches"
 
