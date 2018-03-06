@@ -114,5 +114,7 @@ mod test {
         assert_matches!(a, Foo::A(n) if n == 0, "o noes");
         assert_matches!(a, Foo::A(_), "o noes {:?}", a);
         assert_matches!(a, Foo::A(n) if n == 0, "o noes {:?}", a);
+        assert_matches!(a, Foo::A(_), "o noes value={value:?}", value = a);
+        assert_matches!(a, Foo::A(n) if n == 0, "o noes value={value:?}", value = a);
     }
 }
