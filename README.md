@@ -26,7 +26,7 @@ to your Cargo.toml:
 
 ```toml
 [dev-dependencies]
-assert_matches = "1.1"
+assert_matches = "1.2"
 ```
 
 And add the following to your crate root:
