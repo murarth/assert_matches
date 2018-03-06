@@ -20,6 +20,8 @@
 /// assert_matches!(a, Foo::A(_));
 ///
 /// assert_matches!(a, Foo::A(i) if i > 0);
+/// 
+/// assert_matches!(a, Foo::A(i) if i > 0 => assert!(i != 0));
 /// ```
 #[macro_export]
 macro_rules! assert_matches {
@@ -37,6 +39,20 @@ macro_rules! assert_matches {
                 e, stringify!($pat), stringify!($cond))
         }
     };
+    ( $e:expr , $pat:pat => $arm:expr ) => {
+        match $e {
+            $pat => $arm,
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`",
+                e, stringify!($pat))
+        }
+    };
+    ( $e:expr , $pat:pat if $cond:expr => $arm:expr ) => {
+        match $e {
+            $pat if $cond => $arm,
+            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`",
+                e, stringify!($pat), stringify!($cond))
+        }
+    };
     ( $e:expr , $pat:pat , $($arg:tt)* ) => {
         match $e {
             $pat => (),
@@ -47,6 +63,20 @@ macro_rules! assert_matches {
     ( $e:expr , $pat:pat if $cond:expr , $($arg:tt)* ) => {
         match $e {
             $pat if $cond => (),
+            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`: {}",
+                e, stringify!($pat), stringify!($cond), format_args!($($arg)*))
+        }
+    };
+    ( $e:expr , $pat:pat => $arm:expr , $($arg:tt)* ) => {
+        match $e {
+            $pat => $arm,
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
+                e, stringify!($pat), format_args!($($arg)*))
+        }
+    };
+    ( $e:expr , $pat:pat if $cond:expr => $arm:expr , $($arg:tt)* ) => {
+        match $e {
+            $pat if $cond => $arm,
             ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`: {}",
                 e, stringify!($pat), stringify!($cond), format_args!($($arg)*))
         }
@@ -74,6 +104,10 @@ mod test {
         assert_matches!(b, Foo::B(_));
         assert_matches!(b, Foo::B("foo"));
         assert_matches!(b, Foo::B(s) if s == "foo");
+        assert_matches!(b, Foo::B(s) => assert_eq!(s, "foo"));
+        assert_matches!(b, Foo::B(s) => { assert_eq!(s, "foo"); assert!(true) });
+        assert_matches!(b, Foo::B(s) if s == "foo" => assert_eq!(s, "foo"));
+        assert_matches!(b, Foo::B(s) if s == "foo" => { assert_eq!(s, "foo"); assert!(true) });
     }
 
     #[test]
@@ -101,6 +135,38 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
+    fn test_assert_panic_3() {
+        let b = Foo::B("foo");
+
+        assert_matches!(b, Foo::B(s) => assert_eq!(s, "bar"));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_panic_4() {
+        let b = Foo::B("foo");
+
+        assert_matches!(b, Foo::B(s) if s == "bar" => assert_eq!(s, "foo"));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_panic_5() {
+        let b = Foo::B("foo");
+
+        assert_matches!(b, Foo::B(s) if s == "foo" => assert_eq!(s, "bar"));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_panic_6() {
+        let b = Foo::B("foo");
+
+        assert_matches!(b, Foo::B(s) if s == "foo" => { assert_eq!(s, "foo"); assert!(false) });
+    }
+
+    #[test]
     fn test_assert_no_move() {
         let b = &mut Foo::A(0);
         assert_matches!(*b, Foo::A(0));
@@ -112,9 +178,18 @@ mod test {
 
         assert_matches!(a, Foo::A(_), "o noes");
         assert_matches!(a, Foo::A(n) if n == 0, "o noes");
+        assert_matches!(a, Foo::A(n) => assert_eq!(n, 0), "o noes");
+        assert_matches!(a, Foo::A(n) => { assert_eq!(n, 0); assert!(n < 1) }, "o noes");
+        assert_matches!(a, Foo::A(n) if n == 0 => assert_eq!(n, 0), "o noes");
+        assert_matches!(a, Foo::A(n) if n == 0 => { assert_eq!(n, 0); assert!(n < 1) }, "o noes");
         assert_matches!(a, Foo::A(_), "o noes {:?}", a);
         assert_matches!(a, Foo::A(n) if n == 0, "o noes {:?}", a);
-        assert_matches!(a, Foo::A(_), "o noes value={value:?}", value = a);
-        assert_matches!(a, Foo::A(n) if n == 0, "o noes value={value:?}", value = a);
+        assert_matches!(a, Foo::A(n) => assert_eq!(n, 0), "o noes {:?}", a);
+        assert_matches!(a, Foo::A(n) => { assert_eq!(n, 0); assert!(n < 1) }, "o noes {:?}", a);
+        assert_matches!(a, Foo::A(_), "o noes {value:?}", value=a);
+        assert_matches!(a, Foo::A(n) if n == 0, "o noes {value:?}", value=a);
+        assert_matches!(a, Foo::A(n) => assert_eq!(n, 0), "o noes {value:?}", value=a);
+        assert_matches!(a, Foo::A(n) => { assert_eq!(n, 0); assert!(n < 1) }, "o noes {value:?}", value=a);
+        assert_matches!(a, Foo::A(n) if n == 0 => assert_eq!(n, 0), "o noes {value:?}", value=a);
     }
 }
