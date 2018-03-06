@@ -29,6 +29,13 @@ to your Cargo.toml:
 assert_matches = "1.1"
 ```
 
+And add the following to your crate root:
+
+```rust
+#[cfg(test)] #[macro_use]
+extern crate assert_matches;
+```
+
 ## License
 
 `assert_matches` is distributed under the terms of both the MIT license and the
