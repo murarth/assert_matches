@@ -1,27 +1,56 @@
 //! Provides a macro, `assert_matches`, which tests whether a value
 //! matches a given pattern, causing a panic if the match fails.
+//!
+//! See the macro [`assert_matches`] documentation for more information.
+//!
+//! [`assert_matches`]: macro.assert_matches.html
 
 #![deny(missing_docs)]
 
-/// Asserts that an expression matches a given pattern, with an optional guard
-/// expression.
+/// Asserts that an expression matches a given pattern.
 ///
-/// ```ignore
+/// A guard expression may be supplied to add further restrictions to the
+/// expected value of the expression.
+///
+/// A `match` arm may be supplied to perform additional assertions or to yield
+/// a value from the macro invocation.
+///
+/// # Examples
+///
+/// ```
 /// #[macro_use] extern crate assert_matches;
 ///
 /// #[derive(Debug)]
 /// enum Foo {
 ///     A(i32),
-///     B(i32),
+///     B(&'static str),
 /// }
 ///
+/// # fn main() {
 /// let a = Foo::A(1);
 ///
+/// // Assert that `a` matches the pattern `Foo::A(_)`.
 /// assert_matches!(a, Foo::A(_));
 ///
+/// // Assert that `a` matches the pattern and
+/// // that the contained value meets the condition `i > 0`.
 /// assert_matches!(a, Foo::A(i) if i > 0);
+///
+/// let b = Foo::B("foobar");
 /// 
-/// assert_matches!(a, Foo::A(i) if i > 0 => assert!(i != 0));
+/// // Assert that `b` matches the pattern `Foo::B(_)`.
+/// assert_matches!(b, Foo::B(s) => {
+///     // Perform additional assertions on the variable binding `s`.
+///     assert!(s.starts_with("foo"));
+///     assert!(s.ends_with("bar"));
+/// });
+///
+/// // Assert that `b` matches the pattern and yield the string `s`.
+/// let s = assert_matches!(b, Foo::B(s) => s);
+///
+/// // Perform an assertion on the value `s`.
+/// assert_eq!(s, "foobar");
+/// # }
 /// ```
 #[macro_export]
 macro_rules! assert_matches {
@@ -35,8 +64,8 @@ macro_rules! assert_matches {
     ( $e:expr , $pat:pat if $cond:expr ) => {
         match $e {
             $pat if $cond => (),
-            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`",
-                e, stringify!($pat), stringify!($cond))
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`",
+                e, stringify!($pat if $cond))
         }
     };
     ( $e:expr , $pat:pat => $arm:expr ) => {
@@ -49,8 +78,8 @@ macro_rules! assert_matches {
     ( $e:expr , $pat:pat if $cond:expr => $arm:expr ) => {
         match $e {
             $pat if $cond => $arm,
-            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`",
-                e, stringify!($pat), stringify!($cond))
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`",
+                e, stringify!($pat if $cond))
         }
     };
     ( $e:expr , $pat:pat , $($arg:tt)* ) => {
@@ -63,8 +92,8 @@ macro_rules! assert_matches {
     ( $e:expr , $pat:pat if $cond:expr , $($arg:tt)* ) => {
         match $e {
             $pat if $cond => (),
-            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`: {}",
-                e, stringify!($pat), stringify!($cond), format_args!($($arg)*))
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
+                e, stringify!($pat if $cond), format_args!($($arg)*))
         }
     };
     ( $e:expr , $pat:pat => $arm:expr , $($arg:tt)* ) => {
@@ -77,14 +106,16 @@ macro_rules! assert_matches {
     ( $e:expr , $pat:pat if $cond:expr => $arm:expr , $($arg:tt)* ) => {
         match $e {
             $pat if $cond => $arm,
-            ref e => panic!("assertion failed: `{:?}` does not match `{} if {}`: {}",
-                e, stringify!($pat), stringify!($cond), format_args!($($arg)*))
+            ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
+                e, stringify!($pat if $cond), format_args!($($arg)*))
         }
     };
 }
 
 #[cfg(test)]
 mod test {
+    use std::panic::{catch_unwind, UnwindSafe};
+
     #[derive(Debug)]
     enum Foo {
         A(i32),
@@ -191,5 +222,59 @@ mod test {
         assert_matches!(a, Foo::A(n) => assert_eq!(n, 0), "o noes {value:?}", value=a);
         assert_matches!(a, Foo::A(n) => { assert_eq!(n, 0); assert!(n < 1) }, "o noes {value:?}", value=a);
         assert_matches!(a, Foo::A(n) if n == 0 => assert_eq!(n, 0), "o noes {value:?}", value=a);
+    }
+
+    fn panic_message<F>(f: F) -> String
+            where F: FnOnce() + UnwindSafe {
+        let err = catch_unwind(f)
+            .expect_err("function did not panic");
+
+        *err.downcast::<String>()
+            .expect("function panicked with non-String value")
+    }
+
+    #[test]
+    fn test_panic_message() {
+        let a = Foo::A(1);
+
+        // expr, pat
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(_));
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`"#);
+
+        // expr, pat if cond
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(s) if s == "foo");
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`"#);
+
+        // expr, pat => arm
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(_) => {});
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`"#);
+
+        // expr, pat if cond => arm
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(s) if s == "foo" => {});
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`"#);
+
+        // expr, pat, args
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(_), "msg");
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`: msg"#);
+
+        // expr, pat if cond, args
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(s) if s == "foo", "msg");
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`: msg"#);
+
+        // expr, pat => arm, args
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(_) => {}, "msg");
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`: msg"#);
+
+        // expr, pat if cond => arm, args
+        assert_eq!(panic_message(|| {
+            assert_matches!(a, Foo::B(s) if s == "foo" => {}, "msg");
+        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`: msg"#);
     }
 }
