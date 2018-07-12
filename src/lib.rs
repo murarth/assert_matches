@@ -1,9 +1,15 @@
-//! Provides a macro, `assert_matches`, which tests whether a value
+//! Provides a macro, `assert_matches!`, which tests whether a value
 //! matches a given pattern, causing a panic if the match fails.
 //!
-//! See the macro [`assert_matches`] documentation for more information.
+//! See the macro [`assert_matches!`] documentation for more information.
 //!
-//! [`assert_matches`]: macro.assert_matches.html
+//! Also provides a debug-only counterpart, [`debug_assert_matches!`].
+//!
+//! See the macro [`debug_assert_matches!`] documentation for more information
+//! about this macro.
+//!
+//! [`assert_matches!`]: macro.assert_matches.html
+//! [`debug_assert_matches!`]: macro.debug_assert_matches.html
 
 #![deny(missing_docs)]
 
@@ -110,6 +116,25 @@ macro_rules! assert_matches {
                 e, stringify!($pat if $cond), format_args!($($arg)*))
         }
     };
+}
+
+/// Asserts that an expression matches a given pattern.
+///
+/// Unlike [`assert_matches!`], `debug_assert_matches!` statements are only enabled
+/// in non-optimized builds by default. An optimized build will omit all
+/// `debug_assert_matches!` statements unless `-C debug-assertions` is passed
+/// to the compiler.
+///
+/// See the macro [`assert_matches!`] documentation for more information.
+///
+/// [`assert_matches!`]: macro.assert_matches.html
+#[macro_export]
+macro_rules! debug_assert_matches {
+    ( $($tt:tt)* ) => { {
+        if cfg!(debug_assertions) {
+            assert_matches!($($tt)*);
+        }
+    } }
 }
 
 #[cfg(test)]
