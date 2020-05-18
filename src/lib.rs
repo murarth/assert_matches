@@ -43,7 +43,7 @@
 /// assert_matches!(a, Foo::A(i) if i > 0);
 ///
 /// let b = Foo::B("foobar");
-/// 
+///
 /// // Assert that `b` matches the pattern `Foo::B(_)`.
 /// assert_matches!(b, Foo::B(s) => {
 ///     // Perform additional assertions on the variable binding `s`.
@@ -242,7 +242,7 @@ mod test {
         assert_matches!(a, Foo::A(n) if n == 0, "o noes {:?}", a);
         assert_matches!(a, Foo::A(n) => assert_eq!(n, 0), "o noes {:?}", a);
         assert_matches!(a, Foo::A(n) => { assert_eq!(n, 0); assert!(n < 1) }, "o noes {:?}", a);
-        assert_matches!(a, Foo::A(_), "o noes {value:?}", value=a);
+        assert_matches!(a, Foo::A(_), "o noes {value:?}", value = a);
         assert_matches!(a, Foo::A(n) if n == 0, "o noes {value:?}", value=a);
         assert_matches!(a, Foo::A(n) => assert_eq!(n, 0), "o noes {value:?}", value=a);
         assert_matches!(a, Foo::A(n) => { assert_eq!(n, 0); assert!(n < 1) }, "o noes {value:?}", value=a);
@@ -250,9 +250,10 @@ mod test {
     }
 
     fn panic_message<F>(f: F) -> String
-            where F: FnOnce() + UnwindSafe {
-        let err = catch_unwind(f)
-            .expect_err("function did not panic");
+    where
+        F: FnOnce() + UnwindSafe,
+    {
+        let err = catch_unwind(f).expect_err("function did not panic");
 
         *err.downcast::<String>()
             .expect("function panicked with non-String value")
@@ -263,43 +264,67 @@ mod test {
         let a = Foo::A(1);
 
         // expr, pat
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(_));
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(_));
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(_)`"#
+        );
 
         // expr, pat if cond
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(s) if s == "foo");
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(s) if s == "foo");
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`"#
+        );
 
         // expr, pat => arm
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(_) => {});
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(_) => {});
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(_)`"#
+        );
 
         // expr, pat if cond => arm
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(s) if s == "foo" => {});
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(s) if s == "foo" => {});
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`"#
+        );
 
         // expr, pat, args
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(_), "msg");
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`: msg"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(_), "msg");
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(_)`: msg"#
+        );
 
         // expr, pat if cond, args
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(s) if s == "foo", "msg");
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`: msg"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(s) if s == "foo", "msg");
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`: msg"#
+        );
 
         // expr, pat => arm, args
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(_) => {}, "msg");
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(_)`: msg"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(_) => {}, "msg");
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(_)`: msg"#
+        );
 
         // expr, pat if cond => arm, args
-        assert_eq!(panic_message(|| {
-            assert_matches!(a, Foo::B(s) if s == "foo" => {}, "msg");
-        }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`: msg"#);
+        assert_eq!(
+            panic_message(|| {
+                assert_matches!(a, Foo::B(s) if s == "foo" => {}, "msg");
+            }),
+            r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`: msg"#
+        );
     }
 }
