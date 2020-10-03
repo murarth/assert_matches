@@ -10,5 +10,6 @@ homepage = "https://github.com/murarth/assert_matches"
 repository = "https://github.com/murarth/assert_matches"
 
 keywords = ["assert", "match", "pattern"]
+categories = ["no-std"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
