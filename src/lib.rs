@@ -12,6 +12,7 @@
 //! [`debug_assert_matches!`]: macro.debug_assert_matches.html
 
 #![deny(missing_docs)]
+#![cfg_attr(not(test), no_std)]
 
 /// Asserts that an expression matches a given pattern.
 ///
