@@ -2,7 +2,7 @@
 name = "assert_matches"
 description = "Asserts that a value matches a pattern"
 
-version = "1.3.0"
+version = "1.4.0"
 authors = ["Murarth <murarth@gmail.com>"]
 
 documentation = "https://docs.rs/assert_matches/"
