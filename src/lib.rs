@@ -44,7 +44,7 @@
 /// assert_matches!(a, Foo::A(i) if i > 0);
 ///
 /// let b = Foo::B("foobar");
-/// 
+///
 /// // Assert that `b` matches the pattern `Foo::B(_)`.
 /// assert_matches!(b, Foo::B(s) => {
 ///     // Perform additional assertions on the variable binding `s`.
@@ -61,60 +61,60 @@
 /// ```
 #[macro_export]
 macro_rules! assert_matches {
-    ( $e:expr , $pat:pat ) => {
+    ( $e:expr , $pat:pat $(,)? ) => {
         match $e {
             $pat => (),
             ref e => panic!("assertion failed: `{:?}` does not match `{}`",
                 e, stringify!($pat))
         }
     };
-    ( $e:expr , $pat:pat if $cond:expr ) => {
+    ( $e:expr , $pat:pat if $cond:expr $(,)? ) => {
         match $e {
             $pat if $cond => (),
             ref e => panic!("assertion failed: `{:?}` does not match `{}`",
                 e, stringify!($pat if $cond))
         }
     };
-    ( $e:expr , $pat:pat => $arm:expr ) => {
+    ( $e:expr , $pat:pat => $arm:expr $(,)? ) => {
         match $e {
             $pat => $arm,
             ref e => panic!("assertion failed: `{:?}` does not match `{}`",
                 e, stringify!($pat))
         }
     };
-    ( $e:expr , $pat:pat if $cond:expr => $arm:expr ) => {
+    ( $e:expr , $pat:pat if $cond:expr => $arm:expr $(,)? ) => {
         match $e {
             $pat if $cond => $arm,
             ref e => panic!("assertion failed: `{:?}` does not match `{}`",
                 e, stringify!($pat if $cond))
         }
     };
-    ( $e:expr , $pat:pat , $($arg:tt)* ) => {
+    ( $e:expr , $pat:pat , $($arg:tt)+ ) => {
         match $e {
             $pat => (),
             ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
-                e, stringify!($pat), format_args!($($arg)*))
+                e, stringify!($pat), format_args!($($arg)+))
         }
     };
-    ( $e:expr , $pat:pat if $cond:expr , $($arg:tt)* ) => {
+    ( $e:expr , $pat:pat if $cond:expr , $($arg:tt)+ ) => {
         match $e {
             $pat if $cond => (),
             ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
-                e, stringify!($pat if $cond), format_args!($($arg)*))
+                e, stringify!($pat if $cond), format_args!($($arg)+))
         }
     };
-    ( $e:expr , $pat:pat => $arm:expr , $($arg:tt)* ) => {
+    ( $e:expr , $pat:pat => $arm:expr , $($arg:tt)+ ) => {
         match $e {
             $pat => $arm,
             ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
-                e, stringify!($pat), format_args!($($arg)*))
+                e, stringify!($pat), format_args!($($arg)+))
         }
     };
-    ( $e:expr , $pat:pat if $cond:expr => $arm:expr , $($arg:tt)* ) => {
+    ( $e:expr , $pat:pat if $cond:expr => $arm:expr , $($arg:tt)+ ) => {
         match $e {
             $pat if $cond => $arm,
             ref e => panic!("assertion failed: `{:?}` does not match `{}`: {}",
-                e, stringify!($pat if $cond), format_args!($($arg)*))
+                e, stringify!($pat if $cond), format_args!($($arg)+))
         }
     };
 }
@@ -302,5 +302,34 @@ mod test {
         assert_eq!(panic_message(|| {
             assert_matches!(a, Foo::B(s) if s == "foo" => {}, "msg");
         }), r#"assertion failed: `A(1)` does not match `Foo::B(s) if s == "foo"`: msg"#);
+    }
+
+    #[test]
+    fn trailing_commas() {
+        let a = Foo::A(123);
+
+        assert_matches!(a, Foo::A(..));
+        assert_matches!(a, Foo::A(..),);
+
+        assert_matches!(a, Foo::A(val) if val >= 100);
+        assert_matches!(a, Foo::A(val) if val >= 100,);
+
+        assert_matches!(a, Foo::A(val) => assert!(val >= 100));
+        assert_matches!(a, Foo::A(val) => assert!(val >= 100),);
+
+        assert_matches!(a, Foo::A(val) if val >= 100 => assert!(val < 200));
+        assert_matches!(a, Foo::A(val) if val >= 100 => assert!(val < 200),);
+
+        assert_matches!(a, Foo::A(..), "error message");
+        assert_matches!(a, Foo::A(..), "error message",);
+
+        assert_matches!(a, Foo::A(val) if val >= 100, "error message");
+        assert_matches!(a, Foo::A(val) if val >= 100, "error message",);
+
+        assert_matches!(a, Foo::A(val) => assert!(val >= 100), "error message");
+        assert_matches!(a, Foo::A(val) => assert!(val >= 100), "error message",);
+
+        assert_matches!(a, Foo::A(val) if val >= 100 => assert!(val < 200), "error message");
+        assert_matches!(a, Foo::A(val) if val >= 100 => assert!(val < 200), "error message",);
     }
 }
