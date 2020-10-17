@@ -129,13 +129,19 @@ macro_rules! assert_matches {
 /// See the macro [`assert_matches!`] documentation for more information.
 ///
 /// [`assert_matches!`]: macro.assert_matches.html
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! debug_assert_matches {
     ( $($tt:tt)* ) => { {
-        if cfg!(debug_assertions) {
+        if _assert_matches_cfg!(debug_assertions) {
             assert_matches!($($tt)*);
         }
     } }
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _assert_matches_cfg {
+    ( $($tt:tt)* ) => { cfg!($($tt)*) }
 }
 
 #[cfg(test)]
